@@ -15,35 +15,6 @@ services:
       timeout: 3s
       retries: 20
 
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "127.0.0.1:11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    command: ["serve"]
-    healthcheck:
-      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
-
-  ollama-pull:
-    image: ollama/ollama:latest
-    env_file:
-      - .env
-    depends_on:
-      ollama:
-        condition: service_healthy
-    command:
-      [
-        "sh",
-        "-lc",
-        "ollama pull ${GEMMA_MODEL:-gemma:7b}"
-      ]
-    volumes:
-      - ollama_data:/root/.ollama
-
   migrator:
     build:
       context: .
@@ -67,15 +38,14 @@ services:
         condition: service_completed_successfully
       db:
         condition: service_healthy
-      ollama-pull:
-        condition: service_completed_successfully
     ports:
       - "${PORT:-8080}:${PORT:-8080}"
     command: ["sh", "-lc", "npm run dev"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - .:/app
       - /app/node_modules
 
 volumes:
   postgres_data:
-  ollama_data:

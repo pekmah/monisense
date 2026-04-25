@@ -15,30 +15,6 @@ services:
       timeout: 3s
       retries: 20
 
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "127.0.0.1:11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    command: ["serve"]
-
-  ollama-pull:
-    image: ollama/ollama:latest
-    env_file:
-      - .env
-    depends_on:
-      ollama:
-        condition: service_started
-    command:
-      [
-        "sh",
-        "-lc",
-        "ollama pull ${GEMMA_MODEL:-gemma:7b}"
-      ]
-    volumes:
-      - ollama_data:/root/.ollama
-
   migrator:
     build:
       context: .
@@ -59,12 +35,11 @@ services:
         condition: service_completed_successfully
       db:
         condition: service_healthy
-      ollama-pull:
-        condition: service_completed_successfully
     ports:
       - "${PORT:-8080}:${PORT:-8080}"
     command: ["sh", "-lc", "npm run start"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   postgres_data:
-  ollama_data:
