@@ -1,0 +1,81 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: finance_ai
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d finance_ai"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    command: ["serve"]
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  ollama-pull:
+    image: ollama/ollama:latest
+    env_file:
+      - .env
+    depends_on:
+      ollama:
+        condition: service_healthy
+    command:
+      [
+        "sh",
+        "-lc",
+        "ollama pull ${GEMMA_MODEL:-gemma:7b}"
+      ]
+    volumes:
+      - ollama_data:/root/.ollama
+
+  migrator:
+    build:
+      context: .
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["sh", "-lc", "npm run db:migrate"]
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+  api:
+    build:
+      context: .
+    env_file:
+      - .env
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      ollama-pull:
+        condition: service_completed_successfully
+    ports:
+      - "${PORT:-8080}:${PORT:-8080}"
+    command: ["sh", "-lc", "npm run dev"]
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+  ollama_data:
