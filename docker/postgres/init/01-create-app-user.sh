@@ -3,12 +3,25 @@ set -eu
 
 APP_DB_NAME="${APP_DB_NAME:?APP_DB_NAME is required}"
 APP_DB_USER="${APP_DB_USER:?APP_DB_USER is required}"
-APP_DB_PASSWORD_FILE="${APP_DB_PASSWORD_FILE:?APP_DB_PASSWORD_FILE is required}"
-POSTGRES_PASSWORD_FILE="${POSTGRES_PASSWORD_FILE:?POSTGRES_PASSWORD_FILE is required}"
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
 
-APP_DB_PASSWORD="$(cat "$APP_DB_PASSWORD_FILE")"
-POSTGRES_PASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"
+if [ -n "${APP_DB_PASSWORD:-}" ]; then
+  APP_DB_PASSWORD="$APP_DB_PASSWORD"
+elif [ -n "${APP_DB_PASSWORD_FILE:-}" ]; then
+  APP_DB_PASSWORD="$(cat "$APP_DB_PASSWORD_FILE")"
+else
+  echo "APP_DB_PASSWORD or APP_DB_PASSWORD_FILE is required" >&2
+  exit 1
+fi
+
+if [ -n "${POSTGRES_PASSWORD:-}" ]; then
+  POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
+elif [ -n "${POSTGRES_PASSWORD_FILE:-}" ]; then
+  POSTGRES_PASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"
+else
+  echo "POSTGRES_PASSWORD or POSTGRES_PASSWORD_FILE is required" >&2
+  exit 1
+fi
 
 APP_DB_USER_ESCAPED="$(printf "%s" "$APP_DB_USER" | sed 's/"/""/g')"
 APP_DB_NAME_ESCAPED="$(printf "%s" "$APP_DB_NAME" | sed 's/"/""/g')"
