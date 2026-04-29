@@ -19,12 +19,6 @@ services:
     secrets:
       - postgres_superuser_password
       - app_db_password
-    read_only: true
-    tmpfs:
-      - /tmp
-      - /var/run/postgresql
-    cap_drop:
-      - ALL
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
