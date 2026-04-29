@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { readFileSync } from "node:fs";
 import { z } from "zod";
 
 const isProduction = process.env.NODE_ENV === "production";
@@ -12,6 +13,21 @@ const parseBoolean = (value: unknown) => {
   return value;
 };
 
+const readSecretFile = (path: string | undefined) => {
+  if (!path) return undefined;
+  return readFileSync(path, "utf8").trim();
+};
+
+const resolveSecretEnv = (name: string) => {
+  const direct = process.env[name];
+  if (direct && direct.trim() !== "") return direct;
+
+  const fromFile = readSecretFile(process.env[`${name}_FILE`]);
+  if (fromFile && fromFile.trim() !== "") return fromFile;
+
+  return undefined;
+};
+
 const EnvSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
@@ -22,6 +38,7 @@ const EnvSchema = z.object({
     .default(isProduction ? "info" : "debug"),
   LOG_FORMAT: z.enum(["pretty", "json"]).default(isProduction ? "json" : "pretty"),
   DATABASE_URL: z.string().min(1),
+  DATABASE_ADMIN_URL: z.string().min(1).optional(),
   API_SECRET: z.string().min(8),
   GEMMA_BASE_URL: z.string().url(),
   GEMMA_MODEL: z.string().min(1).default("gemma:7b"),
@@ -34,4 +51,9 @@ const EnvSchema = z.object({
 
 export type Env = z.infer<typeof EnvSchema>;
 
-export const env = EnvSchema.parse(process.env);
+export const env = EnvSchema.parse({
+  ...process.env,
+  DATABASE_URL: resolveSecretEnv("DATABASE_URL"),
+  DATABASE_ADMIN_URL: resolveSecretEnv("DATABASE_ADMIN_URL"),
+  API_SECRET: resolveSecretEnv("API_SECRET"),
+});

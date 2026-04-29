@@ -2,13 +2,32 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: finance_ai
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_superuser_password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=scram-sha-256
+      APP_DB_NAME: finance_ai
+      APP_DB_USER: app_user
+      APP_DB_PASSWORD_FILE: /run/secrets/app_db_password
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - internal
+    secrets:
+      - postgres_superuser_password
+      - app_db_password
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d finance_ai"]
       interval: 3s
@@ -18,12 +37,30 @@ services:
   migrator:
     build:
       context: .
-    env_file:
-      - .env
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      DATABASE_URL_FILE: /run/secrets/database_admin_url
+      API_SECRET_FILE: /run/secrets/api_secret
+      GEMMA_BASE_URL: http://host.docker.internal:11434
+      GEMMA_MODEL: ${GEMMA_MODEL:-gemma:7b}
+      PORT: ${PORT:-8080}
+      NODE_ENV: development
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      LOG_FORMAT: ${LOG_FORMAT:-pretty}
+      REQUEST_BODY_LIMIT_BYTES: ${REQUEST_BODY_LIMIT_BYTES:-16384}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-120}
+      ALLOW_MOCK_GEMMA: ${ALLOW_MOCK_GEMMA:-false}
     command: ["sh", "-lc", "npm run db:migrate"]
+    networks:
+      - internal
+    secrets:
+      - database_admin_url
+      - api_secret
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - .:/app
       - /app/node_modules
@@ -31,16 +68,33 @@ services:
   api:
     build:
       context: .
-    env_file:
-      - .env
     depends_on:
       migrator:
         condition: service_completed_successfully
       db:
         condition: service_healthy
+    environment:
+      DATABASE_URL_FILE: /run/secrets/database_url
+      API_SECRET_FILE: /run/secrets/api_secret
+      GEMMA_BASE_URL: http://host.docker.internal:11434
+      GEMMA_MODEL: ${GEMMA_MODEL:-gemma:7b}
+      PORT: ${PORT:-8080}
+      NODE_ENV: development
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      LOG_FORMAT: ${LOG_FORMAT:-pretty}
+      REQUEST_BODY_LIMIT_BYTES: ${REQUEST_BODY_LIMIT_BYTES:-16384}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-120}
+      ALLOW_MOCK_GEMMA: ${ALLOW_MOCK_GEMMA:-false}
     ports:
       - "${PORT:-8080}:${PORT:-8080}"
     command: ["sh", "-lc", "npm run dev"]
+    networks:
+      - internal
+      - public
+    secrets:
+      - database_url
+      - api_secret
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -49,3 +103,20 @@ services:
 
 volumes:
   postgres_data:
+
+networks:
+  internal:
+    internal: true
+  public:
+
+secrets:
+  postgres_superuser_password:
+    file: ./secrets/postgres_superuser_password.txt
+  app_db_password:
+    file: ./secrets/app_db_password.txt
+  database_url:
+    file: ./secrets/database_url.txt
+  database_admin_url:
+    file: ./secrets/database_admin_url.txt
+  api_secret:
+    file: ./secrets/api_secret.txt
