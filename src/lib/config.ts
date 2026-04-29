@@ -19,11 +19,11 @@ const readSecretFile = (path: string | undefined) => {
 };
 
 const resolveSecretEnv = (name: string) => {
-  const direct = process.env[name];
-  if (direct && direct.trim() !== "") return direct;
-
   const fromFile = readSecretFile(process.env[`${name}_FILE`]);
   if (fromFile && fromFile.trim() !== "") return fromFile;
+
+  const direct = process.env[name];
+  if (direct && direct.trim() !== "") return direct;
 
   return undefined;
 };
