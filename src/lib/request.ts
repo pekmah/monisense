@@ -78,9 +78,14 @@ export const bodySizeLimit: MiddlewareHandler<{ Variables: AppVariables }> = asy
 ) => {
   const contentLengthHeader = c.req.header("content-length");
   const contentLength = contentLengthHeader ? Number(contentLengthHeader) : 0;
+  const requestBodyLimit =
+    c.req.path === "/v1/ai/bulk/ingest-sms"
+      ? env.BULK_REQUEST_BODY_LIMIT_BYTES
+      : env.REQUEST_BODY_LIMIT_BYTES;
+
   if (
     Number.isFinite(contentLength) &&
-    contentLength > env.REQUEST_BODY_LIMIT_BYTES
+    contentLength > requestBodyLimit
   ) {
     throw raiseError("COMMON_INVALID_REQUEST", {
       message: "Request body too large.",
