@@ -2,6 +2,12 @@ import { createRoute, z } from "@hono/zod-openapi";
 
 import { ClassificationRequestSchema, ClassificationResponseSchema } from "../modules/classification/classification.schemas.js";
 import { FeedbackRequestSchema, FeedbackResponseSchema } from "../modules/feedback/feedback.schemas.js";
+import {
+  BatchResultsResponseSchema,
+  BatchStatusSchema,
+  BulkIngestSmsRequestSchema,
+  BulkIngestSmsResponseSchema,
+} from "../modules/jobs/job.schemas.js";
 import { ParseSmsRequestSchema, ParseSmsResponseSchema } from "../modules/sms/sms.schemas.js";
 
 export const ErrorDetailSchema = z
@@ -109,6 +115,14 @@ const errorResponses = {
   },
   502: {
     description: "Gemma or upstream inference failure",
+    content: {
+      "application/json": {
+        schema: ErrorResponseSchema,
+      },
+    },
+  },
+  404: {
+    description: "Requested resource was not found",
     content: {
       "application/json": {
         schema: ErrorResponseSchema,
@@ -256,6 +270,111 @@ export const feedbackRoute = createRoute({
     },
     400: errorResponses[400],
     401: errorResponses[401],
+    429: errorResponses[429],
+    500: errorResponses[500],
+  },
+});
+
+const BatchParamsSchema = z.object({
+  batchId: z.string().uuid().openapi({
+    example: "8abf3216-4c65-4560-bdbb-83231be2d4fb",
+  }),
+});
+
+const BatchQuerySchema = z.object({
+  userId: z.string().min(1).openapi({
+    example: "user_123",
+  }),
+});
+
+export const bulkIngestSmsRoute = createRoute({
+  method: "post",
+  path: "/v1/ai/bulk/ingest-sms",
+  tags: ["AI"],
+  summary: "Queue bulk SMS ingestion",
+  description:
+    "Accepts many SMS messages at once, stores one classification job per message, and returns a batch id for polling.",
+  security: [{ ApiSecretHeader: [] }],
+  request: {
+    headers: ApiSecretHeaderSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: BulkIngestSmsRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    202: {
+      description: "Bulk SMS batch accepted",
+      content: {
+        "application/json": {
+          schema: BulkIngestSmsResponseSchema,
+        },
+      },
+    },
+    400: errorResponses[400],
+    401: errorResponses[401],
+    429: errorResponses[429],
+    500: errorResponses[500],
+  },
+});
+
+export const batchStatusRoute = createRoute({
+  method: "get",
+  path: "/v1/ai/bulk/jobs/{batchId}",
+  tags: ["AI"],
+  summary: "Get bulk batch status",
+  description: "Returns progress counters and current status for a queued SMS ingestion batch.",
+  security: [{ ApiSecretHeader: [] }],
+  request: {
+    headers: ApiSecretHeaderSchema,
+    params: BatchParamsSchema,
+    query: BatchQuerySchema,
+  },
+  responses: {
+    200: {
+      description: "Bulk batch status",
+      content: {
+        "application/json": {
+          schema: BatchStatusSchema,
+        },
+      },
+    },
+    400: errorResponses[400],
+    401: errorResponses[401],
+    404: errorResponses[404],
+    429: errorResponses[429],
+    500: errorResponses[500],
+  },
+});
+
+export const batchResultsRoute = createRoute({
+  method: "get",
+  path: "/v1/ai/bulk/jobs/{batchId}/results",
+  tags: ["AI"],
+  summary: "Get bulk batch results",
+  description: "Returns per-message parse and classification results for a queued SMS ingestion batch.",
+  security: [{ ApiSecretHeader: [] }],
+  request: {
+    headers: ApiSecretHeaderSchema,
+    params: BatchParamsSchema,
+    query: BatchQuerySchema,
+  },
+  responses: {
+    200: {
+      description: "Bulk batch results",
+      content: {
+        "application/json": {
+          schema: BatchResultsResponseSchema,
+        },
+      },
+    },
+    400: errorResponses[400],
+    401: errorResponses[401],
+    404: errorResponses[404],
     429: errorResponses[429],
     500: errorResponses[500],
   },

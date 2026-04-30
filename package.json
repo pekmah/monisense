@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/app/server.ts",
+    "worker:dev": "tsx watch src/modules/jobs/job-worker.ts",
     "start": "node --enable-source-maps dist/app/server.js",
+    "worker:start": "node --enable-source-maps dist/modules/jobs/job-worker.js",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",

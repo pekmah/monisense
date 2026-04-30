@@ -120,3 +120,61 @@ export const userFeedback = pgTable(
     index("user_feedback_merchant_idx").on(table.merchantKey),
   ],
 );
+
+export const jobBatches = pgTable(
+  "job_batches",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id").notNull(),
+    clientBatchId: text("client_batch_id"),
+    type: text("type").notNull().default("sms_ingest"),
+    status: text("status").notNull().default("queued"),
+    existingCategories: jsonb("existing_categories")
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    totalJobs: integer("total_jobs").notNull().default(0),
+    completedJobs: integer("completed_jobs").notNull().default(0),
+    failedJobs: integer("failed_jobs").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("job_batches_user_idx").on(table.userId),
+    index("job_batches_status_idx").on(table.status),
+    uniqueIndex("job_batches_user_client_batch_unique").on(table.userId, table.clientBatchId),
+  ],
+);
+
+export const classificationJobs = pgTable(
+  "classification_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    batchId: uuid("batch_id")
+      .notNull()
+      .references(() => jobBatches.id),
+    userId: text("user_id").notNull(),
+    status: text("status").notNull().default("queued"),
+    jobType: text("job_type").notNull().default("parse_and_classify"),
+    rawSms: text("raw_sms").notNull(),
+    rawSmsHash: text("raw_sms_hash").notNull(),
+    parsedJson: jsonb("parsed_json"),
+    resultJson: jsonb("result_json"),
+    errorCode: text("error_code"),
+    errorMessage: text("error_message"),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull().default(3),
+    runAfter: timestamp("run_after", { withTimezone: true }).notNull().defaultNow(),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    lockedBy: text("locked_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("classification_jobs_batch_idx").on(table.batchId),
+    index("classification_jobs_user_idx").on(table.userId),
+    index("classification_jobs_status_idx").on(table.status),
+    index("classification_jobs_run_after_idx").on(table.runAfter),
+    uniqueIndex("classification_jobs_batch_hash_unique").on(table.batchId, table.rawSmsHash),
+  ],
+);

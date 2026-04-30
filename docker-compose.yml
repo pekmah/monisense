@@ -95,6 +95,39 @@ services:
       - .:/app
       - /app/node_modules
 
+  worker:
+    build: .
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL_FILE: /run/secrets/database_url
+      API_SECRET_FILE: /run/secrets/api_secret
+      GEMMA_BASE_URL: http://host.docker.internal:11434
+      GEMMA_MODEL: ${GEMMA_MODEL:-gemma:7b}
+      GEMMA_TIMEOUT_MS: ${GEMMA_TIMEOUT_MS:-60000}
+      PORT: ${PORT:-8080}
+      NODE_ENV: development
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      LOG_FORMAT: ${LOG_FORMAT:-pretty}
+      REQUEST_BODY_LIMIT_BYTES: ${REQUEST_BODY_LIMIT_BYTES:-16384}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-300}
+      ALLOW_MOCK_GEMMA: ${ALLOW_MOCK_GEMMA:-false}
+    command: ["sh", "-lc", "npm run worker:dev"]
+    networks:
+      - internal
+    secrets:
+      - database_url
+      - api_secret
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - .:/app
+      - /app/node_modules
+
 volumes:
   postgres_data:
 

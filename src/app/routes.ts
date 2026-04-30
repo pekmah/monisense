@@ -2,6 +2,9 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { sql } from "drizzle-orm";
 
 import {
+  batchResultsRoute,
+  batchStatusRoute,
+  bulkIngestSmsRoute,
   classifyTransactionRoute,
   feedbackRoute,
   healthRoute,
@@ -12,6 +15,11 @@ import { parseSmsTransaction } from "../modules/sms/sms-parser.js";
 import { ParseSmsRequestSchema } from "../modules/sms/sms.schemas.js";
 import { classifyTransactionController } from "../modules/classification/classification.controller.js";
 import { feedbackController } from "../modules/feedback/feedback.controller.js";
+import {
+  bulkIngestSmsController,
+  getBatchResultsController,
+  getBatchStatusController,
+} from "../modules/jobs/job.controller.js";
 import type { AppVariables } from "../types.js";
 
 export function registerRoutes(app: OpenAPIHono<{ Variables: AppVariables }>) {
@@ -44,4 +52,7 @@ export function registerRoutes(app: OpenAPIHono<{ Variables: AppVariables }>) {
 
   app.openapi(classifyTransactionRoute, classifyTransactionController);
   app.openapi(feedbackRoute, feedbackController);
+  app.openapi(bulkIngestSmsRoute, bulkIngestSmsController);
+  app.openapi(batchStatusRoute, getBatchStatusController);
+  app.openapi(batchResultsRoute, getBatchResultsController);
 }

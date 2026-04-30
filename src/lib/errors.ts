@@ -43,6 +43,16 @@ const catalog = {
     message: "Too many requests.",
     displayTitle: "Rate Limited",
   },
+  COMMON_NOT_FOUND: {
+    status: 404,
+    code: "COMMON.NOT_FOUND",
+    domain: "COMMON",
+    type: "not_found",
+    severity: "warning",
+    exposure: "FULL",
+    message: "Requested resource was not found.",
+    displayTitle: "Not Found",
+  },
   COMMON_INTERNAL: {
     status: 500,
     code: "COMMON.INTERNAL_ERROR",

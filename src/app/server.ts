@@ -8,6 +8,7 @@ import { env } from "../lib/config.js";
 import { GemmaClient } from "../modules/ai/gemma-client.js";
 import { ClassificationService } from "../modules/classification/classification.service.js";
 import { FeedbackService } from "../modules/feedback/feedback.service.js";
+import { JobService } from "../modules/jobs/job.service.js";
 import { handleAppError } from "../middleware/error.js";
 import { bodySizeLimit, rateLimit, requestContext, requestLogger } from "../lib/request.js";
 import type { AppVariables } from "../types.js";
@@ -18,6 +19,7 @@ const db = createDb(env.DATABASE_URL);
 const gemmaClient = new GemmaClient();
 const classificationService = new ClassificationService(db, gemmaClient);
 const feedbackService = new FeedbackService(db);
+const jobService = new JobService(db, classificationService);
 
 const app = new OpenAPIHono<{ Variables: AppVariables }>();
 
@@ -30,6 +32,7 @@ app.use("*", async (c, next) => {
   c.set("db", db);
   c.set("classificationService", classificationService);
   c.set("feedbackService", feedbackService);
+  c.set("jobService", jobService);
   await next();
 });
 
