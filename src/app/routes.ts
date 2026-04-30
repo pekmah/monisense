@@ -2,6 +2,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { sql } from "drizzle-orm";
 
 import {
+  batchStreamRoute,
   batchResultsRoute,
   batchStatusRoute,
   bulkIngestSmsRoute,
@@ -19,6 +20,7 @@ import {
   bulkIngestSmsController,
   getBatchResultsController,
   getBatchStatusController,
+  streamBatchStatusController,
 } from "../modules/jobs/job.controller.js";
 import type { AppVariables } from "../types.js";
 
@@ -55,4 +57,5 @@ export function registerRoutes(app: OpenAPIHono<{ Variables: AppVariables }>) {
   app.openapi(bulkIngestSmsRoute, bulkIngestSmsController);
   app.openapi(batchStatusRoute, getBatchStatusController);
   app.openapi(batchResultsRoute, getBatchResultsController);
+  app.openapi(batchStreamRoute, streamBatchStatusController);
 }

@@ -379,3 +379,36 @@ export const batchResultsRoute = createRoute({
     500: errorResponses[500],
   },
 });
+
+export const batchStreamRoute = createRoute({
+  method: "get",
+  path: "/v1/ai/bulk/jobs/{batchId}/stream",
+  tags: ["AI"],
+  summary: "Stream bulk batch status",
+  description:
+    "Streams Server-Sent Events for a queued SMS batch, emitting status and progress changes until completion.",
+  security: [{ ApiSecretHeader: [] }],
+  request: {
+    headers: ApiSecretHeaderSchema,
+    params: BatchParamsSchema,
+    query: BatchQuerySchema,
+  },
+  responses: {
+    200: {
+      description: "SSE stream of batch progress",
+      content: {
+        "text/event-stream": {
+          schema: z.string().openapi({
+            example:
+              "event: job.progress\\ndata: {\\\"batchId\\\":\\\"...\\\",\\\"status\\\":\\\"processing\\\",\\\"progress\\\":50}\\n\\n",
+          }),
+        },
+      },
+    },
+    400: errorResponses[400],
+    401: errorResponses[401],
+    404: errorResponses[404],
+    429: errorResponses[429],
+    500: errorResponses[500],
+  },
+});
