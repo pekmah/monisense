@@ -42,7 +42,7 @@ const EnvSchema = z.object({
   API_SECRET: z.string().min(8),
   GEMMA_BASE_URL: z.string().url(),
   GEMMA_MODEL: z.string().min(1).default("gemma:7b"),
-  GEMMA_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
+  GEMMA_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
   REQUEST_BODY_LIMIT_BYTES: z.coerce.number().int().positive().default(16384),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(300),

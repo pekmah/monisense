@@ -39,7 +39,7 @@ services:
       API_SECRET_FILE: /run/secrets/api_secret
       GEMMA_BASE_URL: http://host.docker.internal:11434
       GEMMA_MODEL: ${GEMMA_MODEL:-gemma:7b}
-      GEMMA_TIMEOUT_MS: ${GEMMA_TIMEOUT_MS:-30000}
+      GEMMA_TIMEOUT_MS: ${GEMMA_TIMEOUT_MS:-60000}
       PORT: ${PORT:-8080}
       NODE_ENV: production
       LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -70,7 +70,7 @@ services:
       API_SECRET_FILE: /run/secrets/api_secret
       GEMMA_BASE_URL: http://host.docker.internal:11434
       GEMMA_MODEL: ${GEMMA_MODEL:-gemma:7b}
-      GEMMA_TIMEOUT_MS: ${GEMMA_TIMEOUT_MS:-30000}
+      GEMMA_TIMEOUT_MS: ${GEMMA_TIMEOUT_MS:-60000}
       PORT: ${PORT:-8080}
       NODE_ENV: production
       LOG_LEVEL: ${LOG_LEVEL:-info}

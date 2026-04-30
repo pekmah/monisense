@@ -57,6 +57,7 @@ export class GemmaClient {
             prompt,
             stream: false,
             format: "json",
+            keep_alive: "10m",
           }),
           signal: controller.signal,
         },
