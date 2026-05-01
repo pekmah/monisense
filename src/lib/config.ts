@@ -44,7 +44,7 @@ const EnvSchema = z.object({
   GEMMA_MODEL: z.string().min(1).default("gemma:7b"),
   GEMMA_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
   REQUEST_BODY_LIMIT_BYTES: z.coerce.number().int().positive().default(16384),
-  BULK_REQUEST_BODY_LIMIT_BYTES: z.coerce.number().int().positive().default(262144),
+  BULK_REQUEST_BODY_LIMIT_BYTES: z.coerce.number().int().positive().default(5242880),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(300),
   ALLOW_MOCK_GEMMA: z.preprocess(parseBoolean, z.boolean().default(false)),
