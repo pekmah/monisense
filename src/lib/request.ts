@@ -8,6 +8,22 @@ import type { AppVariables } from "../types.js";
 
 const buckets = new Map<string, { count: number; resetAt: number }>();
 
+function getRequestBodyLimit(path: string) {
+  if (path === "/v1/ai/bulk/ingest-sms") {
+    return env.BULK_REQUEST_BODY_LIMIT_BYTES;
+  }
+
+  return env.REQUEST_BODY_LIMIT_BYTES;
+}
+
+function getRateLimitMaxRequests(path: string) {
+  if (path.startsWith("/v1/ai/bulk/")) {
+    return env.BULK_RATE_LIMIT_MAX_REQUESTS;
+  }
+
+  return env.RATE_LIMIT_MAX_REQUESTS;
+}
+
 function getClientFingerprint(
   c: Parameters<MiddlewareHandler<{ Variables: AppVariables }>>[0],
 ) {
@@ -78,10 +94,7 @@ export const bodySizeLimit: MiddlewareHandler<{ Variables: AppVariables }> = asy
 ) => {
   const contentLengthHeader = c.req.header("content-length");
   const contentLength = contentLengthHeader ? Number(contentLengthHeader) : 0;
-  const requestBodyLimit =
-    c.req.path === "/v1/ai/bulk/ingest-sms"
-      ? env.BULK_REQUEST_BODY_LIMIT_BYTES
-      : env.REQUEST_BODY_LIMIT_BYTES;
+  const requestBodyLimit = getRequestBodyLimit(c.req.path);
 
   if (
     Number.isFinite(contentLength) &&
@@ -101,6 +114,7 @@ export const rateLimit: MiddlewareHandler<{ Variables: AppVariables }> = async (
   next,
 ) => {
   const fingerprint = getClientFingerprint(c);
+  const maxRequests = getRateLimitMaxRequests(c.req.path);
   const key = createHash("sha256")
     .update(`${fingerprint.ip}:${fingerprint.secretFingerprint}:${c.req.method}:${c.req.path}`)
     .digest("hex");
@@ -114,16 +128,16 @@ export const rateLimit: MiddlewareHandler<{ Variables: AppVariables }> = async (
       count: 1,
       resetAt: now + env.RATE_LIMIT_WINDOW_MS,
     });
-    c.header("x-ratelimit-limit", String(env.RATE_LIMIT_MAX_REQUESTS));
-    c.header("x-ratelimit-remaining", String(env.RATE_LIMIT_MAX_REQUESTS - 1));
+    c.header("x-ratelimit-limit", String(maxRequests));
+    c.header("x-ratelimit-remaining", String(maxRequests - 1));
     c.header("x-ratelimit-reset", String(now + env.RATE_LIMIT_WINDOW_MS));
     await next();
     return;
   }
 
-  if (bucket.count >= env.RATE_LIMIT_MAX_REQUESTS) {
+  if (bucket.count >= maxRequests) {
     c.header("retry-after", String(retryAfterSeconds));
-    c.header("x-ratelimit-limit", String(env.RATE_LIMIT_MAX_REQUESTS));
+    c.header("x-ratelimit-limit", String(maxRequests));
     c.header("x-ratelimit-remaining", "0");
     c.header("x-ratelimit-reset", String(bucket.resetAt));
     throw raiseError("COMMON_RATE_LIMITED", {
@@ -133,10 +147,10 @@ export const rateLimit: MiddlewareHandler<{ Variables: AppVariables }> = async (
   }
 
   bucket.count += 1;
-  c.header("x-ratelimit-limit", String(env.RATE_LIMIT_MAX_REQUESTS));
+  c.header("x-ratelimit-limit", String(maxRequests));
   c.header(
     "x-ratelimit-remaining",
-    String(Math.max(0, env.RATE_LIMIT_MAX_REQUESTS - bucket.count)),
+    String(Math.max(0, maxRequests - bucket.count)),
   );
   c.header("x-ratelimit-reset", String(bucket.resetAt));
   await next();

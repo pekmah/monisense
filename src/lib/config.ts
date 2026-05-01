@@ -47,6 +47,7 @@ const EnvSchema = z.object({
   BULK_REQUEST_BODY_LIMIT_BYTES: z.coerce.number().int().positive().default(5242880),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(300),
+  BULK_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(1200),
   ALLOW_MOCK_GEMMA: z.preprocess(parseBoolean, z.boolean().default(false)),
 });
 
