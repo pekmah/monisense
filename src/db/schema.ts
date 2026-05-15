@@ -108,9 +108,21 @@ export const userFeedback = pgTable(
   "user_feedback",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    clientFeedbackId: text("client_feedback_id"),
     userId: text("user_id").notNull(),
+    entityType: text("entity_type"),
+    entityId: text("entity_id"),
+    merchantName: text("merchant_name"),
     merchantKey: text("merchant_key"),
+    amountMinor: integer("amount_minor"),
+    direction: text("direction"),
+    oldCategoryId: text("old_category_id"),
+    oldCategory: text("old_category"),
+    finalCategoryId: text("final_category_id"),
     aiSuggestedCategory: text("ai_suggested_category"),
+    aiConfidence: integer("ai_confidence"),
+    classificationSource: text("classification_source"),
+    correctionType: text("correction_type").notNull().default("corrected"),
     finalCategory: text("final_category").notNull(),
     wasAiCorrect: boolean("was_ai_correct").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -118,6 +130,29 @@ export const userFeedback = pgTable(
   (table) => [
     index("user_feedback_user_idx").on(table.userId),
     index("user_feedback_merchant_idx").on(table.merchantKey),
+    uniqueIndex("user_feedback_user_client_unique").on(table.userId, table.clientFeedbackId),
+  ],
+);
+
+export const classificationExamples = pgTable(
+  "classification_examples",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id").notNull(),
+    merchantKey: text("merchant_key").notNull(),
+    merchantDisplayName: text("merchant_display_name").notNull(),
+    cleanDescription: text("clean_description"),
+    amountBand: text("amount_band"),
+    direction: text("direction"),
+    finalCategory: text("final_category").notNull(),
+    rejectedCategory: text("rejected_category"),
+    sourceFeedbackId: uuid("source_feedback_id").references(() => userFeedback.id),
+    weight: integer("weight").notNull().default(100),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("classification_examples_user_merchant_idx").on(table.userId, table.merchantKey),
+    index("classification_examples_user_category_idx").on(table.userId, table.finalCategory),
   ],
 );
 

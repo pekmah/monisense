@@ -9,6 +9,7 @@ import { CategoryProposalsService } from "../categories/category-proposals.servi
 import type { Logger } from "../../lib/logger.js";
 import { buildClassificationPrompt } from "./classification.prompt.js";
 import type { ClassificationRequest, ClassificationResponse } from "./classification.schemas.js";
+import { LearningExamplesService } from "./learning-examples.service.js";
 import { MerchantMemoryService } from "../merchants/merchant-memory.service.js";
 import { normalizeMerchantKey } from "../merchants/merchant-normalizer.js";
 
@@ -16,6 +17,7 @@ export class ClassificationService {
   private readonly merchantMemoryService: MerchantMemoryService;
   private readonly categoryGovernor = new CategoryGovernorService();
   private readonly categoryProposalsService: CategoryProposalsService;
+  private readonly learningExamplesService: LearningExamplesService;
 
   constructor(
     private readonly db: Db,
@@ -23,6 +25,7 @@ export class ClassificationService {
   ) {
     this.merchantMemoryService = new MerchantMemoryService(db);
     this.categoryProposalsService = new CategoryProposalsService(db);
+    this.learningExamplesService = new LearningExamplesService(db);
   }
 
   async classify(
@@ -61,12 +64,18 @@ export class ClassificationService {
       }
     }
 
+    const learnedExamples = await this.learningExamplesService.findRelevant({
+      userId: input.userId,
+      merchantKey,
+    });
+
     const prompt = buildClassificationPrompt({
       transactionType: input.transaction.transactionType,
       amount: input.transaction.amount,
       merchantName: input.transaction.merchantName,
       cleanDescription: input.transaction.cleanDescription,
       existingCategories: input.existingCategories,
+      learnedExamples,
     });
 
     const inference = await this.gemmaClient.classify(prompt, log);

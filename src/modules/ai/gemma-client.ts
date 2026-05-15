@@ -8,6 +8,15 @@ export type GemmaClassificationInput = {
   merchantName: string | null;
   cleanDescription: string;
   existingCategories: string[];
+  learnedExamples?: Array<{
+    amountBand: string | null;
+    direction: string | null;
+    finalCategory: string;
+    merchantDisplayName: string;
+    merchantKey: string;
+    rejectedCategory: string | null;
+    weight: number;
+  }>;
 };
 
 export type GemmaHttpResponse = {

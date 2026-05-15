@@ -25,6 +25,23 @@ export function buildClassificationPrompt(input: GemmaClassificationInput) {
     "Existing categories:",
     JSON.stringify(input.existingCategories),
     "",
+    "User learning memory:",
+    JSON.stringify(
+      (input.learnedExamples ?? []).map((example) => ({
+        merchant: example.merchantDisplayName,
+        merchantKey: example.merchantKey,
+        direction: example.direction,
+        amountBand: example.amountBand,
+        correctCategory: example.finalCategory,
+        rejectedCategory: example.rejectedCategory,
+        weight: example.weight,
+      })),
+      null,
+      2,
+    ),
+    "If a learned example strongly matches the current merchant, prefer its correctCategory.",
+    "Never choose a rejectedCategory for the same merchant unless the current transaction clearly differs.",
+    "",
     "Return this JSON shape exactly:",
     JSON.stringify(
       {
